@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Hidden Verdicts | Mumbai Crime Grid</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #050302;
+      font-family: 'Times New Roman', Times, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ---------- FULLSCREEN BLACK INTRO (DELAY + "Hidden Verdicts") ---------- */
+    .intro-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 1.2s ease-in-out;
+      pointer-events: none;
+    }
+    .intro-content {
+      text-align: center;
+      transform: scale(0.98);
+      animation: introPulse 1.6s ease-out;
+    }
+    .intro-title {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 5rem;
+      font-weight: 900;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #e0cba0, #b87a3c, #e2b481);
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 18px rgba(180, 70, 25, 0.6);
+      margin-bottom: 1rem;
+    }
+    .intro-sub {
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      letter-spacing: 5px;
+      color: #bc7a44;
+      border-top: 1px solid #4a2e1a;
+      display: inline-block;
+      padding-top: 0.8rem;
+      font-weight: 500;
+    }
+    @keyframes introPulse {
+      0% { opacity: 0; transform: scale(0.94); filter: blur(2px);}
+      30% { opacity: 1; transform: scale(1.02); filter: blur(0);}
+      100% { opacity: 1; transform: scale(1);}
+    }
+    .intro-overlay.hidden-intro {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 1s ease, visibility 0.1s 1s;
+    }
+
+    /* ---------- NEWSPAPER HEADING SECTION (WITH NAV ON RIGHT) ---------- */
+    .newspaper-header {
+      width: 100%;
+      text-align: center;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* MARQUEE TICKER (replaces crime-flag) */
+  
+
+    .main-headline {
+      font-size: 5.8rem;
+      font-weight: 900;
+      font-family: 'Times New Roman', Times, serif;
+      text-transform: uppercase;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #f7e8cf, #e0a86a, #f5cf9a);
+      background-clip: text;
+      color: transparent;
+      text-shadow: 6px 6px 0 rgba(70, 25, 5, 0.4);
+      position: relative;
+      display: inline-block;
+      line-height: 1.1;
+      text-align: center;
+    }
+    /* Newspaper-style underline ornament - centered */
+    .main-headline::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #c28244, #e6aa6f, #c28244, transparent);
+    }
+
+    /* ---------- NAV LINKS (Timeline & Form) ON THE RIGHT ---------- */
+    .headline-nav-right {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 1.8rem;
+      margin-top: 0.8rem;
+      margin-bottom: 0.5rem;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 15;
+      width: 100%;
+      max-width: 1400px;
+    }
+    .nav-crime-link {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #d9a56c;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      padding: 0.5rem 1.6rem;
+      border-radius: 40px;
+      background: rgba(20, 12, 8, 0.7);
+      backdrop-filter: blur(4px);
+      border: 1px solid #6a3e22;
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-crime-link::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(220, 100, 40, 0.3), transparent);
+      transition: left 0.5s ease;
+    }
+    .nav-crime-link:hover::before {
+      left: 100%;
+    }
+    .nav-crime-link:hover {
+      color: #f5d6a8;
+      border-color: #c2713a;
+      background: rgba(30, 20, 14, 0.9);
+      text-shadow: 0 0 5px rgba(200, 80, 30, 0.5);
+      transform: translateY(-2px);
+    }
+
+    /* Main container - clean dashboard box (8 crime zones) */
+    .dashboard {
+      max-width: 1300px;
+      width: 90%;
+      margin: 1rem auto 3rem auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 10;
+      background: rgba(8, 6, 4, 0.7);
+      backdrop-filter: blur(6px);
+      border-radius: 48px;
+      border: 1px solid rgba(180, 80, 40, 0.5);
+      box-shadow: 0 25px 45px rgba(0,0,0,0.5);
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    .dashboard.visible-dash {
+      opacity: 1;
+    }
+
+    /* 8-grid layout (responsive) */
+    .crime-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.8rem;
+      margin: 1rem 0;
+    }
+
+    .grid-item {
+      background: linear-gradient(145deg, #1c1610, #110e0a);
+      border-radius: 28px;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      border: 1px solid #6a3e22;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(2px);
+    }
+    /* IMAGE PLACEHOLDER STYLES - ready for user images */
+    .zone-image {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+      border: 1px solid #b4763a;
+      background: #2a1e14;
+      display: block;
+    }
+    /* For zones without image yet, a subtle placeholder gradient */
+    .grid-item .zone-image-placeholder {
+      width: 100%;
+      height: 130px;
+      background: linear-gradient(145deg, #2d221b, #1e1610);
+      border-radius: 20px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a56e3e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.7rem;
+      border: 1px dashed #8a542c;
+    }
+    .grid-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 30% 20%, rgba(220, 90, 40, 0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+    .grid-item:hover::before {
+      opacity: 1;
+    }
+    .grid-item:hover {
+      transform: translateY(-12px) scale(1.02);
+      border-color: #d17e42;
+      box-shadow: 0 20px 35px -10px rgba(200, 70, 20, 0.4);
+      background: #241e16;
+    }
+    .zone-name {
+      font-size: 1.9rem;
+      font-weight: 800;
+      font-family: 'Times New Roman', Times, serif;
+      color: #f0cca6;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+    .zone-status {
+      font-size: 0.75rem;
+      font-family: 'Courier New', monospace;
+      color: #c99f6b;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.5px;
+      line-height: 1.3;
+    }
+    .risk-indicator {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: bold;
+      padding: 0.25rem 1rem;
+      border-radius: 40px;
+      background: #2a1a10;
+      color: #eab46b;
+    }
+    .risk-high {
+      background: #8b2a1a;
+      color: #ffcf9a;
+      box-shadow: 0 0 8px rgba(200, 60, 20, 0.5);
+    }
+    .risk-critical {
+      background: #b82e14;
+      color: #ffddb0;
+      animation: pulseRed 1.8s infinite;
+    }
+    .risk-moderate {
+      background: #b66a2a;
+      color: #ffe1b3;
+    }
+    @keyframes pulseRed {
+      0% { opacity: 0.9; box-shadow: 0 0 0 0 rgba(200, 60, 20, 0.4);}
+      70% { opacity: 1; box-shadow: 0 0 0 6px rgba(200, 60, 20, 0);}
+      100% { opacity: 0.9; box-shadow: 0 0 0 0 rgba(200, 60, 20, 0);}
+    }
+
+    /* Interactive toast message */
+    .toast-message {
+      position: fixed;
+      bottom: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f1710;
+      backdrop-filter: blur(16px);
+      border-left: 6px solid #dc582a;
+      padding: 12px 28px;
+      border-radius: 60px;
+      font-family: 'Courier New', monospace;
+      color: #f5dcae;
+      font-size: 0.9rem;
+      z-index: 2000;
+      animation: fadeSlide 0.35s ease;
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+      font-weight: bold;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    /* Responsive design */
+    @media (max-width: 1000px) {
+      .crime-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+      }
+      .main-headline {
+        font-size: 4rem;
+      }
+      .headline-nav-right {
+        padding: 0 1rem;
+      }
+      .nav-crime-link {
+        font-size: 1rem;
+        padding: 0.4rem 1.2rem;
+      }
+    }
+    @media (max-width: 750px) {
+      .crime-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.2rem;
+      }
+      .main-headline {
+        font-size: 3.2rem;
+      }
+      .dashboard {
+        width: 95%;
+        padding: 1.5rem;
+      }
+      .zone-name {
+        font-size: 1.5rem;
+      }
+      .intro-title {
+        font-size: 2.8rem;
+        letter-spacing: 3px;
+      }
+      .headline-nav-right {
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 0.5rem;
+      }
+      .news-ticker .ticker-content {
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 550px) {
+      .crime-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      .toast-message {
+        white-space: normal;
+        text-align: center;
+        font-size: 0.75rem;
+        width: 80%;
+      }
+      .intro-title {
+        font-size: 2.3rem;
+        letter-spacing: 2px;
+      }
+      .main-headline {
+        font-size: 2.4rem;
+        letter-spacing: -1px;
+      }
+      .headline-nav-right {
+        flex-wrap: wrap;
+        gap: 0.8rem;
+      }
+      .nav-crime-link {
+        font-size: 0.8rem;
+        padding: 0.3rem 1rem;
+        letter-spacing: 1px;
+      }
+      .zone-image, .grid-item .zone-image-placeholder {
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- FULLSCREEN BLACK INTRO with DELAY + "Hidden Verdicts" text -->
+<div id="introOverlay" class="intro-overlay">
+  <div class="intro-content">
+    <div class="intro-title">HIDDEN VERDICTS</div>
+    <div class="intro-sub"><strong>✦ WHERE SILENCE SPEAKS ✦</strong></div>
+  </div>
+</div>
+
+
+<!-- NEWSPAPER HEADING SECTION (Hidden Verdicts headline) -->
+<div class="newspaper-header">
+  <marquee style="width:100%; background:#1a0804; border-top:2px solid #b8321a; border-bottom:2px solid #b8321a; padding:0.7rem 0; margin-bottom:1.2rem; color:#ff3a1a; font-family:'Times New Roman', Times, serif; font-size:1rem; font-weight:bold;" scrollamount="5">
+    <a href="https://www.ndtv.com/" style="color:#ff3a1a; font-family:'Times New Roman', Times, serif; text-decoration:none; font-weight:bold;">❗ LIVE: BREAKING NEWS FROM ALL OVER THE WORLD❗</a>
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="https://www.ndtv.com/search?searchtext=Iran-War" style="color:#ff3a1a; font-family:'Times New Roman', Times, serif; ">Iran-Israel War</a>
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="https://www.ndtv.com/elections" style="color:#ff3a1a; font-family:'Times New Roman', Times, serif; ">Assembly Elections 2026</a>
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="https://sports.ndtv.com/ipl-2026" style="color:#ff3a1a; font-family:'Times New Roman', Times, serif;">IPL 2026</a>
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="https://www.ndtv.com/search?searchtext=Dhurandhar-2" style="color:#ff3a1a; font-family:'Times New Roman', Times, serif;">Dhurandhar 2</a>
+    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    <a href="https://www.ndtv.com/" style="color:#ff3a1a; font-family:'Times New Roman', Times, serif;"> MORE NEWS @ NDTV</a>
+  </marquee>
+  <h1 class="main-headline">HIDDEN VERDICTS</h1>
+</div>
+
+<!-- TIMELINE & FORM LINKS - PLACED ON THE RIGHT SIDE (aligned to right) -->
+<div class="headline-nav-right">
+  <a href="about.html" class="nav-crime-link">ABOUT US</a>
+  <a href="timeline.html" class="nav-crime-link">TIMELINE</a>
+  <a href="form_wp project.html" class="nav-crime-link"> FORM</a>
+
+</div>
+
+<!-- MAIN CRIME GRID CONTAINER (8 ZONES - with specific external links & IMAGE SYNTAX) -->
+<div class="dashboard" id="mainDashboard">
+  <div class="crime-grid" id="mumbaiGrid">
+    <!-- KURLA: Times of India article link + IMAGE SYNTAX (uncomment and replace src) -->
+    <div class="grid-item" data-zone="Kurla" data-link="https://timesofindia.indiatimes.com/city/delhi/toy-car-bomb-plot-pan-india-terror-sweep-leads-to-arrest-of-duo-in-mumbai/articleshow/130043851.cms">
+      <!-- === IMAGE SYNTAX FOR KURLA === -->
+      <img class="zone-image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTRYoELJSUup7Va4D1slqwJeWHyNMF4dHMfzA&s" alt="Kurla crime scene"> 
+  <div class="zone-name">KURLA</div>
+  <div class="zone-status">Arms seizure · Gang shootout</div>
+  <div class="risk-indicator risk-high">HIGH ALERT</div>
+  <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=45" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+</div>
+    <!-- BANDRA: NDTV crime topic link -->
+    <div class="grid-item" data-zone="Bandra" data-link="https://www.ndtv.com/topic/bandra-crime">
+      <!-- === IMAGE SYNTAX FOR BANDRA === -->
+      <img class="zone-image" src=https://staybloom.com/content/1667989923991-Bandra-Worli%20Sea%20Link%20Desktop.jpg alt="Bandra cyber cell"> 
+      <div class="zone-name">BANDRA</div>
+      <div class="zone-status">Cyber extortion · Phishing</div>
+      <div class="risk-indicator risk-moderate">MODERATE</div>
+      <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=9" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+    </div>
+    <!-- DHARAVI: NDTV dharavi murder article -->
+    <div class="grid-item" data-zone="Dharavi" data-link="https://www.ndtv.com/mumbai-news/dharavi-murder-eyewitness-killed-on-spot-451291">
+      <!-- === IMAGE SYNTAX FOR DHARAVI === -->
+      <img class="zone-image" src=https://dynamic-media-cdn.tripadvisor.com/media/photo-o/09/52/de/65/dharavi.jpg?w=600&h=400&s=1>
+      <div class="zone-name">DHARAVI</div>
+      <div class="zone-status">Territorial clash · Extortion</div>
+      <div class="risk-indicator risk-critical">CRITICAL</div>
+      <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=6" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+    </div>
+    <!-- ANDHERI: NDTV andheri police topic -->
+    <div class="grid-item" data-zone="Andheri" data-link="https://www.ndtv.com/topic/andheri-police">
+      <img class="zone-image" src=https://www.adanirealty.com/-/media/Project/Realty/Blogs/andheri-west-or-east-discover-the-best-place-to-live-in-mumbai alt="Andheri drug bust"> 
+      <div class="zone-name">ANDHERI</div>
+      <div class="zone-status">Drug haul · ₹12cr mephedrone</div>
+      <div class="risk-indicator risk-high">HIGH</div>
+      <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=27" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+    </div>
+    <!-- NAGPADA: NDTV mumbai nagpada police topic -->
+    <div class="grid-item" data-zone="Nagpada" data-link="https://www.ndtv.com/topic/mumbai-nagpada-police">
+    <img class="zone-image" src=https://th-i.thgim.com/public/news/cities/mumbai/3fy952/article26334155.ece/alternates/FREE_1200/22BMNAGPADAJUNCTION alt="Nagpada organized crime"> 
+      <div class="zone-name">NAGPADA</div>
+      <div class="zone-status">Organized crime · Mafia</div>
+      <div class="risk-indicator risk-critical">CRITICAL</div>
+      <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=62" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+    </div>
+    <!-- GHATKOPAR: NDTV ghatkopar topic -->
+    <div class="grid-item" data-zone="Ghatkopar" data-link="https://www.ndtv.com/topic/ghatkopar">
+      <img class="zone-image" src=https://img.staticmb.com/mbphoto/locality/cropped_images/2020/Oct/29/Photo_h600_w900/93793_Hawk-Eye-View_600_900.jpg alt="Ghatkopar gambling raid"> 
+      <div class="zone-name">GHATKOPAR</div>
+      <div class="zone-status">Illegal gambling · Hawala</div>
+      <div class="risk-indicator risk-moderate">MODERATE</div>
+      <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=31" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+    </div>
+    <!-- VIRAR: Times of India vasai-virar news -->
+    <div class="grid-item" data-zone="Virar" data-link=https://marathi.abplive.com/topic/vile-parle#:~:text=Vile%20Parle%20Vidhan%20Sabha:%20%E0%A4%B5%E0%A4%BF%E0%A4%B2%E0%A5%87%E0%A4%AA%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%B2%E0%A5%87%20%E0%A4%B5%E0%A4%BF%E0%A4%A7%E0%A4%BE%E0%A4%A8%E0%A4%B8%E0%A4%AD%E0%A4%BE%20%E0%A4%AE%E0%A4%A4%E0%A4%A6%E0%A4%BE%E0%A4%B0%E0%A4%B8%E0%A4%82%E0%A4%98%E0%A4%BE%E0%A4%A4,%E0%A4%85%E0%A4%B3%E0%A4%B5%E0%A4%A3%E0%A5%80%20%E0%A4%95%E0%A5%80%20%E0%A4%B8%E0%A4%82%E0%A4%A6%E0%A5%80%E0%A4%AA%20%E0%A4%A8%E0%A4%BE%E0%A4%88%E0%A4%95%2C%20%E0%A4%95%E0%A5%8B%E0%A4%A3%20%E0%A4%AE%E0%A4%BE%E0%A4%B0%E0%A4%A3%E0%A4%BE%E0%A4%B0%20%E0%A4%AC%E0%A4%BE%E0%A4%9C%E0%A5%80?>
+      <!-- === IMAGE SYNTAX FOR VIRAR === -->
+     <img class="zone-image" src="https://images.jdmagicbox.com/v2/comp/mumbai/30/022p8012430/catalogue/vile-parle-railway-station-vile-parle-east-mumbai-railway-enquiry-services-a71lgo19ym.jpg" alt="Virar narcotics network"> 
+      <div class="zone-name">VILE PARLE</div>
+      <div class="zone-status">Frauds</div>
+      <div class="risk-indicator risk-high">MODERATE</div>
+      <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=90" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+    </div>
+    <!-- DADAR: Times of India dadar news -->
+    <div class="grid-item" data-zone="Dadar" data-link="https://timesofindia.indiatimes.com/topic/dadar/news">
+      <!-- === IMAGE SYNTAX FOR DADAR === -->
+     <img class="zone-image" src=https://images.indianexpress.com/2025/10/dadar.jpg alt="Dadar land grab case">
+      <div class="zone-name">DADAR</div>
+      <div class="zone-status">Racketeering · Land grab</div>
+      <div class="risk-indicator risk-high">HIGH</div>
+      <p style="color:#d9a56c; font-size:15px;">🔗 <a href="https://mumbaipolice.gov.in/policestation?ps=24" target="_blank" style="color:#eab46b;">Official Police Site</a></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- BLACK SCREEN DELAY + "Hidden Verdicts" intro (2.8 sec) ----
+  const introOverlay = document.getElementById('introOverlay');
+  const dashboard = document.getElementById('mainDashboard');
+  
+  dashboard.classList.remove('visible-dash');
+  dashboard.style.opacity = '0';
+  
+  setTimeout(() => {
+    if (introOverlay) {
+      introOverlay.classList.add('hidden-intro');
+      setTimeout(() => {
+        if (introOverlay && introOverlay.parentNode) {
+          introOverlay.style.display = 'none';
+          introOverlay.remove();
+        }
+      }, 1100);
+    }
+    dashboard.classList.add('visible-dash');
+    dashboard.style.opacity = '1';
+  }, 2800);
+
+  // Toast alert function for zone clicks (Police advisory)
+  function showZoneAlert(zoneName) {
+    const existingToast = document.querySelector('.toast-message');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-message';
+    toast.innerHTML = `🚨 ${zoneName.toUpperCase()} · Police advisory issued. Stay alert and report suspicious activity.`;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      if (toast) toast.remove();
+    }, 3800);
+  }
+
+  function openCrimeReport(zoneName, url) {
+    if (url && url.trim() !== "") {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.innerHTML = `⚠️ No official report link for ${zoneName}. Check back later.`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
+  }
+
+  // Attach click event listeners to each crime grid card
+  const gridItems = document.querySelectorAll('.grid-item');
+  gridItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const zoneNameElement = item.querySelector('.zone-name');
+      const zone = zoneNameElement ? zoneNameElement.innerText : 'Mumbai region';
+      const crimeLink = item.getAttribute('data-link');
+      
+      showZoneAlert(zone);
+      
+      if (crimeLink) {
+        setTimeout(() => {
+          openCrimeReport(zone, crimeLink);
+        }, 150);
+      } else {
+        setTimeout(() => {
+          const fallbackToast = document.createElement('div');
+          fallbackToast.className = 'toast-message';
+          fallbackToast.innerHTML = `🔍 No article linked for ${zone} at this moment.`;
+          document.body.appendChild(fallbackToast);
+          setTimeout(() => fallbackToast.remove(), 2500);
+        }, 150);
+      }
+      
+      item.style.transform = 'scale(0.97)';
+      setTimeout(() => {
+        if (item) item.style.transform = '';
+      }, 150);
+    });
+  });
+
+  // Additional animations & initial fade for header
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = `
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(25px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dashboard.visible-dash {
+      animation: fadeInUp 0.85s cubic-bezier(0.2, 0.9, 0.3, 1.1) forwards;
+    }
+    .newspaper-header, .headline-nav-right {
+      opacity: 0;
+      transition: opacity 0.9s ease;
+    }
+  `;
+  document.head.appendChild(styleSheet);
+  
+  const header = document.querySelector('.newspaper-header');
+  const navRight = document.querySelector('.headline-nav-right');
+  if (header) { header.style.opacity = '0'; setTimeout(() => { if(header) header.style.opacity = '1'; }, 2850); }
+  if (navRight) { navRight.style.opacity = '0'; setTimeout(() => { if(navRight) navRight.style.opacity = '1'; }, 2900); }
+  
+  const bgVideo = document.querySelector('.mumbai-city-video');
+  if (bgVideo) { bgVideo.play().catch(e => console.log("Autoplay blocked")); }
+  
+  // Haptic for nav links
+  const navLinks = document.querySelectorAll('.nav-crime-link');
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      link.style.transform = 'scale(0.96)';
+      setTimeout(() => { if(link) link.style.transform = ''; }, 120);
+    });
+  });
+  
+  console.log("Hidden Verdicts | Mumbai Crime Grid | Marquee news ticker active | Timeline+Form on right | Image syntax ready");
+</script>
+</body>
+</html>

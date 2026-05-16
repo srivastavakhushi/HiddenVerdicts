@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="crimeReportApp">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Crime Reporting | Submit & View Reports</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+    body {
+      min-height:100vh;
+      background: linear-gradient(135deg,#1a0a0a,#0c0505,#2a0a0a,#150505);
+      background-size:400% 400%;
+      animation:bgmove 14s ease infinite;
+      color:#f2f2f2;
+    }
+    @keyframes bgmove{ 0%{background-position:0% 20%;} 50%{background-position:80% 40%;} 100%{background-position:0% 20%;} }
+
+    /* ---- TAB NAV ---- */
+    .tab-nav {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      background: rgba(8,3,3,0.97);
+      border-bottom: 2px solid #4a1f1f;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      padding: 0 20px;
+    }
+    .tab-btn {
+      padding: 16px 36px;
+      background: transparent;
+      border: none;
+      color: #cc9999;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .tab-btn:hover { color: #ffbaba; }
+    .tab-btn.active { color: #ff7d7d; border-bottom-color: #e34d4d; }
+
+    /* ---- PANELS ---- */
+    .tab-panel { display: none; padding: 30px 20px; max-width: 1200px; margin: 0 auto; }
+    .tab-panel.active { display: block; }
+
+    /* ============================================================
+       FORM STYLES
+    ============================================================ */
+    .form-wrap {
+      max-width: 950px;
+      margin: 0 auto;
+      background: rgba(8,3,3,0.95);
+      padding: 35px;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(70,0,0,0.7);
+      border: 1px solid #4a1f1f;
+    }
+    h1 { text-align:center; margin-bottom:10px; text-shadow:0 2px 5px #6b0000; font-size:1.8rem; }
+    .subtitle { text-align:center; font-size:14px; margin-bottom:20px; color:#e0bebe; }
+    .motivation { background:rgba(70,15,15,0.4); border-left:4px solid #a52a2a; padding:12px; margin-bottom:25px; border-radius:6px; font-size:13px; }
+    label { display:block; margin-top:10px; font-size:14px; font-weight:500; }
+    input,select,textarea { width:100%; padding:12px; margin-top:6px; border-radius:6px; border:1px solid #4a2a2a; background:#1a0c0c; color:white; font-size:14px; }
+    textarea { resize:none; height:100px; }
+    .question-block { margin-top:25px; padding:16px; background:rgba(48,10,10,0.6); border-radius:8px; border:1px solid #632727; }
+    .question-title { font-weight:600; color:#ff7d7d; margin-bottom:10px; }
+    .option-label { display:flex; align-items:center; gap:10px; margin-top:8px; cursor:pointer; font-size:14px; }
+    .option-label input[type="radio"], .option-label input[type="checkbox"] { width:18px; height:18px; cursor:pointer; accent-color:#b32b2b; margin:0; flex-shrink:0; }
+    button[type="submit"] { width:100%; padding:14px; margin-top:30px; border:none; border-radius:25px; font-size:15px; cursor:pointer; background:#8b1a1a; color:white; font-weight:600; transition:0.2s; }
+    button[type="submit"]:hover { background:#b32b2b; transform:scale(0.98); }
+    #dropZone { border:2px dashed #b32b2b; padding:20px; text-align:center; margin-top:10px; border-radius:8px; cursor:pointer; background:#1a0c0c; }
+    #previewArea embed, #previewArea img { margin-top:10px; border-radius:6px; max-width:100%; }
+    #map { height:280px; margin-top:15px; border-radius:8px; border:1px solid #632727; }
+    .footer-note { margin-top:20px; font-size:12px; text-align:center; color:#bb9f9f; }
+    .consent-banner { background:#2a1a1a; padding:12px; border-radius:8px; margin:15px 0; text-align:center; border:1px solid #a52a2a; }
+    .error-msg { color:#ff8888; font-size:12px; margin-top:4px; display:block; }
+    input.ng-invalid.ng-touched, select.ng-invalid.ng-touched, textarea.ng-invalid.ng-touched { border-color:#ff5555; background:#2a0c0c; }
+    .time-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .time-input { flex:1; max-width:140px; }
+    .time-input input { width:100%; padding:12px; }
+    .ampm-select { flex:0 0 100px; }
+    .ampm-select select { width:100%; padding:12px; }
+    .location-group { display:flex; flex-direction:column; gap:12px; }
+    @media (max-width:500px) {
+      .time-row { flex-direction:column; align-items:stretch; }
+      .time-input { max-width:none; }
+      .ampm-select { flex:auto; }
+    }
+
+    /* ============================================================
+       FEED STYLES
+    ============================================================ */
+    .feed-header { text-align:center; margin-bottom:30px; }
+    .feed-header h2 { font-size:2rem; background:linear-gradient(135deg,#ffb8b8,#ff6a6a); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:8px; }
+    .feed-header p { color:#cc9999; font-size:1rem; }
+    .stats-bar { display:flex; justify-content:space-between; background:rgba(8,3,3,0.8); padding:15px 25px; border-radius:12px; margin-bottom:30px; flex-wrap:wrap; gap:15px; border:1px solid #4a1f1f; }
+    .stat-card { text-align:center; flex:1; }
+    .stat-number { font-size:2rem; font-weight:700; color:#ff7d7d; }
+    .stat-label { font-size:0.8rem; color:#cc9999; }
+    .stories-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:25px; margin-bottom:30px; }
+    .story-card { background:rgba(15,8,8,0.85); backdrop-filter:blur(5px); border-radius:16px; padding:20px; border-left:4px solid #e34d4d; transition:transform 0.2s,box-shadow 0.2s; display:flex; flex-direction:column; animation:fadeIn 0.4s ease-out; }
+    .story-card:hover { transform:translateY(-3px); box-shadow:0 10px 25px rgba(0,0,0,0.3); }
+    .story-description { color:#f0d4d4; font-size:0.95rem; line-height:1.6; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:14px 16px; border-radius:10px; word-wrap:break-word; word-break:break-word; overflow-wrap:break-word; display:block; }
+    .story-description::before { content:"📢 "; font-size:1.1rem; display:inline-block; margin-right:4px; }
+    .story-meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; font-size:0.75rem; align-items:center; }
+    .story-area { background:#2a1515; padding:5px 12px; border-radius:20px; font-weight:600; color:#ffbaba; font-size:0.8rem; }
+    .story-date { background:#2a1515; padding:5px 12px; border-radius:20px; color:#aa7a7a; }
+    .story-type { background:#3a1010; padding:5px 12px; border-radius:20px; color:#ff9f9f; font-size:0.75rem; }
+    .info-message { text-align:center; padding:40px; background:rgba(8,3,3,0.6); border-radius:20px; margin-top:20px; }
+    .info-message h3 { color:#ff9f9f; margin-bottom:10px; }
+    .info-message p { color:#aa7a7a; }
+    .feed-footer { text-align:center; margin-top:40px; padding-top:20px; border-top:1px solid #4a2a2a; color:#aa7a7a; font-size:0.8rem; }
+    .refresh-btn { background:#4a1f1f; border:none; color:white; padding:10px 20px; border-radius:25px; cursor:pointer; margin-bottom:20px; font-size:14px; transition:0.2s; }
+    .refresh-btn:hover { background:#6b2a2a; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+    @media (max-width:768px) {
+      .stories-grid { grid-template-columns:1fr; }
+      .stats-bar { flex-direction:column; align-items:center; }
+    }
+    ::-webkit-scrollbar { width:8px; }
+    ::-webkit-scrollbar-track { background:#2a1515; border-radius:10px; }
+    ::-webkit-scrollbar-thumb { background:#8b1a1a; border-radius:10px; }
+    .top-nav{
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+}
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body ng-controller="ReportController as ctrl">
+<div class="top-nav">
+  <a href="HOME.html" class="home-btn">🏠 Home</a>
+</div>
+<!-- ===== TAB NAVIGATION ===== -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('form', this)">📝 Submit Report</button>
+  <button class="tab-btn" onclick="showTab('feed', this)">🕊️ Public Feed</button>
+</div>
+
+<!-- ===== TAB: FORM ===== -->
+<div class="tab-panel active" id="tab-form">
+  <div class="form-wrap">
+    <h1>⚡ Speak Up. Stand Strong.</h1>
+    
+    <div class="subtitle">Reporting a crime is a courageous step toward justice and safety.</div>
+    <div class="motivation">⚠️ Take your time. Provide accurate details. All personal info stays confidential unless you choose to share.</div>
+
+    <form id="crimeReportForm" ng-submit="ctrl.submitReport()" name="reportForm" novalidate>
+
+      <!-- Full Name -->
+      <label>Full Name <span style="color:#ff9999;">*</span></label>
+      <input type="text" ng-model="ctrl.report.name" placeholder="e.g. Rida Parihar" name="fullName" required
+             ng-pattern="/^[A-Za-z\u00C0-\u00FF\u0100-\u017F\s\.\-']+$/">
+      <div class="error-msg" ng-show="reportForm.fullName.$touched && reportForm.fullName.$error.required">Name is required.</div>
+      <div class="error-msg" ng-show="reportForm.fullName.$touched && reportForm.fullName.$error.pattern">Only letters, spaces, dots, hyphens and apostrophes allowed.</div>
+
+      <!-- Phone -->
+      <label>Phone Number <span style="color:#ff9999;">*</span></label>
+      <input type="tel" ng-model="ctrl.report.phone" placeholder="+91 9876543210" name="phone" required
+             ng-pattern="/^\+91[0-9]{10}$/">
+      <div class="error-msg" ng-show="reportForm.phone.$touched && reportForm.phone.$error.required">Phone number is required.</div>
+      <div class="error-msg" ng-show="reportForm.phone.$touched && reportForm.phone.$error.pattern">Must be +91 followed by exactly 10 digits.</div>
+
+      <!-- Email -->
+      <label>Email Address <span style="color:#ff9999;">*</span></label>
+      <input type="email" ng-model="ctrl.report.email" placeholder="secure@example.com" name="email" required
+             ng-pattern="/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/">
+      <div class="error-msg" ng-show="reportForm.email.$touched && reportForm.email.$error.required">Email is required.</div>
+      <div class="error-msg" ng-show="reportForm.email.$touched && reportForm.email.$error.pattern">Enter a valid email address.</div>
+
+      <!-- Date -->
+      <label>Date of Crime <span style="color:#ff9999;">*</span></label>
+      <input type="date" ng-model="ctrl.report.date" required>
+
+      <!-- Time -->
+      <label>Time of Crime <span style="color:#ff9999;">*</span></label>
+      <div class="time-row">
+        <div class="time-input">
+          <input type="time" ng-model="ctrl.report.timeValue" placeholder="HH:MM" required>
+        </div>
+        <div class="ampm-select">
+          <select ng-model="ctrl.report.timeAmPm" required>
+            <option value="">AM/PM</option>
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
+        </div>
+      </div>
+      <div class="error-msg" ng-show="(!ctrl.report.timeValue || !ctrl.report.timeAmPm) && reportForm.$submitted">Please select both time and AM/PM.</div>
+
+      <!-- Location -->
+      <label>📍 Location where crime took place <span style="color:#ff9999;">*</span></label>
+      <div class="location-group">
+        <input type="text" ng-model="ctrl.report.areaName" placeholder="e.g., Andheri West, Colaba, Bandra, etc." required>
+        <div class="error-msg" ng-show="reportForm.$submitted && !ctrl.report.areaName">Please enter the area/locality name.</div>
+        <input type="text" ng-model="ctrl.report.exactAddress" placeholder="Exact address (street name, building, landmark)" required>
+        <div class="error-msg" ng-show="reportForm.$submitted && !ctrl.report.exactAddress">Please provide the exact address/location details.</div>
+      </div>
+
+      <!-- Crime Type -->
+      <label>Select Incident Type</label>
+      <select ng-model="ctrl.report.crimeType">
+        <option>Theft</option>
+        <option>Sexual Assault</option>
+        <option>Harassment</option>
+        <option>Fraud</option>
+        <option>Cyber Crime</option>
+        <option>Domestic Violence</option>
+        <option>Others</option>
+      </select>
+
+      <!-- Evidence -->
+      <div class="question-block">
+        <div class="question-title">📎 Was There Any Evidence?</div>
+        <label class="option-label"><input type="checkbox" ng-model="ctrl.report.evidence.photos"> Photos</label>
+        <label class="option-label"><input type="checkbox" ng-model="ctrl.report.evidence.videos"> Videos</label>
+        <label class="option-label"><input type="checkbox" ng-model="ctrl.report.evidence.documents"> Documents</label>
+        <label class="option-label"><input type="checkbox" ng-model="ctrl.report.evidence.hasWitnesses"> Witnesses</label>
+      </div>
+
+      <div id="evidenceUploadSection" ng-show="ctrl.hasAnyEvidence()">
+        <label>Upload Evidence</label>
+        <div id="dropZone" ng-click="ctrl.triggerFileUpload()">Drag & Drop files here or click to upload</div>
+        <input type="file" id="evidenceFile" multiple style="display:none">
+        <div id="previewArea"></div>
+      </div>
+
+      <div id="witnessSection" ng-show="ctrl.report.evidence.hasWitnesses">
+        <label>Witness Details</label>
+        <textarea ng-model="ctrl.report.witnessDetails" placeholder="Name, phone number or description of witness"></textarea>
+        <label class="option-label"><input type="checkbox" ng-model="ctrl.report.witnessesUnknown"> Witnesses were strangers / unknown</label>
+      </div>
+
+      <!-- Map -->
+      <label>Pinpoint on map (optional but helpful)</label>
+      <div id="map"></div>
+
+      <!-- Description -->
+      <label>📝 Describe What Happened <span style="color:#ff9999;">*</span></label>
+      <textarea ng-model="ctrl.report.description" required placeholder="Please provide a detailed description of the incident..." minlength="10"></textarea>
+      <div class="error-msg" ng-show="reportForm.$submitted && (!ctrl.report.description || ctrl.report.description.length < 10)">Description must be at least 10 characters.</div>
+
+      <!-- Public Consent -->
+      <div class="consent-banner">
+        <label class="option-label" style="justify-content:center; font-weight:600;">
+          <input type="checkbox" ng-model="ctrl.report.allowPublicPost" style="width:20px;height:20px;">
+          🌍 I agree to publicly share my story (Description + Area visible to community)
+        </label>
+        <small style="display:block;margin-top:8px;color:#cc9999;">If checked, your story will appear in the Public Feed tab. Personal details (name, phone, email) are never shown.</small>
+      </div>
+
+      <button type="submit">🔒 Submit Report</button>
+    </form>
+    <div class="footer-note">If you are in immediate danger, contact emergency services immediately.</div>
+  </div>
+</div>
+
+<!-- ===== TAB: FEED ===== -->
+<div class="tab-panel" id="tab-feed">
+  <div class="feed-header">
+    <h2>🕊️ Anonymous Community Voices</h2>
+    <p>Real stories from survivors who chose to speak up | Every voice matters</p>
+  </div>
+
+  <div style="text-align:center;margin-bottom:20px;">
+    <button class="refresh-btn" onclick="loadStories()">🔄 Refresh Stories</button>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-number" id="storyCount">0</div><div class="stat-label">Community Stories</div></div>
+    <div class="stat-card"><div class="stat-number" id="areaCount">0</div><div class="stat-label">Areas Covered</div></div>
+    <div class="stat-card"><div class="stat-number" id="activeCount">0</div><div class="stat-label">Active Voices</div></div>
+  </div>
+
+  <div class="stories-grid" id="storiesGrid"></div>
+
+  <div class="feed-footer">
+    <p>⚠️ These are anonymous reports shared voluntarily by survivors. Only description, area, date, time and incident type are visible.</p>
+    <p style="margin-top:10px;">© 2025 Secure Crime Reporting | Your safety matters</p>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  //  TAB SWITCHING
+  // ============================================================
+  function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'feed') loadStories();
+  }
+
+  // ============================================================
+  //  PUBLIC FEED
+  // ============================================================
+  const defaultStories = [
+    {
+      id: 1,
+      description: "It was around 9:30 PM when I was walking back from the metro station. A group of individuals on a motorbike started circling around me suspiciously. My heart raced, but I quickly stepped into a well-lit pharmacy and asked the shopkeeper to let me stay inside until my brother arrived. That small action saved me from potential danger. I want every woman to know: never ignore your instincts. If something feels off, seek immediate help from any nearby shop or home. We must look out for each other.",
+      area: "Sakinaka Metro Station, Andheri East",
+      crimeType: "Harassment",
+      date: "2025-03-15",
+      time12hr: "09:30 PM",
+      timestamp: "2025-03-15T21:30:00"
+    },
+    {
+      id: 2,
+      description: "Last month, my social media account was hacked and the perpetrator sent threatening messages to my family demanding money. They also accessed private photos. I felt violated and scared, but I immediately reported to the cyber crime portal. After three days of investigation with the help of the platform's safety team, my account was restored and the attacker was traced. This experience taught me to enable two-factor authentication and never share OTPs. Digital safety is as crucial as physical safety. Stay vigilant and report any suspicious activity without delay.",
+      area: "Koramangala, Bangalore",
+      crimeType: "Cyber Crime",
+      date: "2025-03-10",
+      time12hr: "02:15 PM",
+      timestamp: "2025-03-10T14:15:00"
+    }
+  ];
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Date not specified';
+    const clean = String(dateStr).substring(0, 10);
+    const [yyyy, mm, dd] = clean.split('-');
+    if (!yyyy || !mm || !dd) return String(dateStr);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${dd} ${months[parseInt(mm, 10) - 1]} ${yyyy}`;
+  }
+
+  function formatTime(timeStr) {
+    if (!timeStr) return 'Time not specified';
+    const match = String(timeStr).match(/(\d{1,2}:\d{2})\s*(AM|PM)/i);
+    if (match) return `${match[1]} ${match[2].toUpperCase()}`;
+    return String(timeStr).substring(0, 8) || 'Time not specified';
+  }
+
+  function sanitizeStory(story) {
+    // Fix date: strip anything after YYYY-MM-DD
+    if (story.date) story.date = String(story.date).substring(0, 10);
+    // Fix time: extract HH:MM AM/PM, discard any Date object garbage
+    if (story.time12hr) {
+      const m = String(story.time12hr).match(/(\d{1,2}:\d{2})\s*(AM|PM)/i);
+      story.time12hr = m ? m[1] + ' ' + m[2].toUpperCase() : '';
+    }
+    if (!story.time12hr && story.time) {
+      const m = String(story.time).match(/(\d{1,2}:\d{2})\s*(AM|PM)/i);
+      story.time12hr = m ? m[1] + ' ' + m[2].toUpperCase() : '';
+    }
+    return story;
+  }
+
+  function loadStories() {
+    let stories = [];
+    try {
+      const stored = localStorage.getItem('public_crime_stories');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) stories = parsed.map(sanitizeStory);
+      }
+    } catch(e) {}
+
+    if (stories.length === 0) stories = [...defaultStories];
+    else {
+      // Re-save sanitized data back to localStorage to fix any old bad entries permanently
+      localStorage.setItem('public_crime_stories', JSON.stringify(stories));
+    }
+
+    stories.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    document.getElementById('storyCount').textContent = stories.length;
+    document.getElementById('activeCount').textContent = stories.length;
+    const uniqueAreas = new Set(stories.map(s => s.area).filter(Boolean));
+    document.getElementById('areaCount').textContent = uniqueAreas.size;
+
+    const grid = document.getElementById('storiesGrid');
+    if (stories.length === 0) {
+      grid.innerHTML = `<div class="info-message"><h3>🤝 No public stories yet</h3><p>Be the first to speak up and submit a report with public consent.</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = stories.map(story => `
+      <div class="story-card">
+        <div class="story-description">${escapeHtml(story.description)}</div>
+        <div class="story-meta">
+          <span class="story-area">📍 ${escapeHtml(story.area)}</span>
+          <span class="story-date">📅 ${escapeHtml(formatDate(story.date))} at ${escapeHtml(story.time12hr || 'Time not specified')}</span>
+          ${story.crimeType ? `<span class="story-type">🏷️ ${escapeHtml(story.crimeType)}</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ============================================================
+  //  ANGULAR APP
+  // ============================================================
+  const app = angular.module('crimeReportApp', []);
+
+  app.controller('ReportController', function($scope) {
+    const ctrl = this;
+
+    function freshReport() {
+      return {
+        name: '', phone: '', email: '', date: '',
+        timeValue: '', timeAmPm: '',
+        areaName: '', exactAddress: '',
+        crimeType: 'Theft',
+        evidence: { photos: false, videos: false, documents: false, hasWitnesses: false },
+        witnessDetails: '', witnessesUnknown: false,
+        description: '', allowPublicPost: false, latLng: null
+      };
+    }
+
+    ctrl.report = freshReport();
+
+    ctrl.hasAnyEvidence = function() {
+      return ctrl.report.evidence.photos || ctrl.report.evidence.videos || ctrl.report.evidence.documents;
+    };
+
+    ctrl.triggerFileUpload = function() {
+      document.getElementById('evidenceFile').click();
+    };
+
+    document.addEventListener('change', function(e) {
+      if (e.target && e.target.id === 'evidenceFile') {
+        const preview = document.getElementById('previewArea');
+        preview.innerHTML = '';
+        Array.from(e.target.files).forEach(file => {
+          let url = URL.createObjectURL(file);
+          if (file.type.startsWith('image/')) {
+            let img = document.createElement('img');
+            img.src = url;
+            img.style.maxHeight = '180px';
+            img.style.objectFit = 'contain';
+            img.style.width = '100%';
+            preview.appendChild(img);
+          } else {
+            let embed = document.createElement('embed');
+            embed.src = url;
+            embed.width = '100%';
+            embed.height = '200';
+            preview.appendChild(embed);
+          }
+        });
+      }
+    });
+
+    let map, marker;
+    setTimeout(function() {
+      const mapDiv = document.getElementById('map');
+      if (mapDiv && !map) {
+        map = L.map('map').setView([19.0760, 72.8777], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        map.on('click', function(e) {
+          if (marker) map.removeLayer(marker);
+          marker = L.marker(e.latlng).addTo(map);
+          ctrl.report.latLng = e.latlng;
+          $scope.$apply();
+        });
+      }
+    }, 300);
+
+    function getTime12hrDisplay() {
+      if (!ctrl.report.timeAmPm) return '';
+      // Read raw string directly from DOM to bypass AngularJS Date object conversion
+      // AngularJS converts <input type="time"> to a Date set to Jan 1 1970 (timezone-shifted)
+      const inputEl = document.querySelector('input[type="time"]');
+      const rawTime = inputEl ? inputEl.value : '';
+      if (!rawTime) return '';
+      return rawTime.substring(0, 5) + ' ' + ctrl.report.timeAmPm;
+    }
+
+    function getCleanDate() {
+      let d = ctrl.report.date;
+      if (!d) return '';
+      // If AngularJS gives us a Date object
+      if (d instanceof Date) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      // If it's an ISO string like 2022-12-08T18:30:00.000Z, slice just the date part
+      return String(d).substring(0, 10);
+    }
+
+    ctrl.submitReport = function() {
+      $scope.reportForm.$submitted = true;
+
+      if ($scope.reportForm.$invalid) {
+        alert("⚠️ Please fix the highlighted errors before submitting.");
+        return;
+      }
+      if (!ctrl.report.description || ctrl.report.description.trim().length < 10) {
+        alert("⚠️ Please provide a detailed description (minimum 10 characters).");
+        return;
+      }
+      if (!ctrl.report.areaName || !ctrl.report.areaName.trim()) {
+        alert("Please enter the area/locality name.");
+        return;
+      }
+      if (!ctrl.report.exactAddress || !ctrl.report.exactAddress.trim()) {
+        alert("Please provide the exact address.");
+        return;
+      }
+      if (!ctrl.report.timeValue || !ctrl.report.timeAmPm) {
+        alert("Please select both time and AM/PM.");
+        return;
+      }
+
+      const time12hrDisplay = getTime12hrDisplay();
+
+      if (ctrl.report.allowPublicPost === true) {
+        let existingStories = [];
+        try {
+          const stored = localStorage.getItem('public_crime_stories');
+          if (stored) existingStories = JSON.parse(stored);
+        } catch(e) {}
+
+        const publicStory = {
+          id: Date.now(),
+          description: ctrl.report.description.trim(),
+          area: ctrl.report.areaName,
+          exactAddress: ctrl.report.exactAddress,
+          date: getCleanDate(),
+          time12hr: time12hrDisplay,
+          crimeType: ctrl.report.crimeType,
+          timestamp: new Date().toISOString()
+        };
+
+        existingStories.unshift(publicStory);
+        localStorage.setItem('public_crime_stories', JSON.stringify(existingStories));
+        alert("✅ Report submitted! Your story has been added to the Public Feed. Switch to the 'Public Feed' tab to see it.");
+      } else {
+        alert("🔒 Report submitted confidentially. Your story will NOT appear in the public feed. Thank you for reporting.");
+      }
+
+      // Reset
+      ctrl.report = freshReport();
+      if (marker && map) { map.removeLayer(marker); marker = null; }
+      document.getElementById('previewArea').innerHTML = '';
+      const fileInput = document.getElementById('evidenceFile');
+      if (fileInput) fileInput.value = '';
+      $scope.reportForm.$setPristine();
+      $scope.reportForm.$setUntouched();
+      $scope.reportForm.$submitted = false;
+    };
+  });
+
+  document.addEventListener('DOMContentLoaded', loadStories);
+</script>
+</body>
+</html>

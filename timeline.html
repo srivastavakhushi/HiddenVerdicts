@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bombay Crimes | 5 Historical Events with Smoke & Rising Stars</title>
+
+<script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+<script src="https://unpkg.com/gsap@3/dist/ScrollTrigger.min.js"></script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    background: #0a0c12;
+    cursor: none;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* FIXED TAJ MAHAL HOTEL BACKGROUND - NO BLUR */
+  .burning-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .building-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Taj_Mahal_Hotel%2C_Bombay%2C_KITLV_1401209.tiff/lossy-page1-250px-Taj_Mahal_Hotel%2C_Bombay%2C_KITLV_1401209.tiff.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+  }
+
+  .dark-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+  }
+
+  /* ========== SMOKE LAYERS ========== */
+  .smoke-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .smoke {
+    position: absolute;
+    bottom: -20%;
+    width: 100%;
+    height: 120%;
+    background-repeat: repeat-x;
+    background-position: bottom;
+    pointer-events: none;
+  }
+
+  .smoke-heavy {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><radialGradient id="grad1"><stop offset="0%" stop-color="rgba(80,70,60,0.8)"/><stop offset="100%" stop-color="rgba(40,35,30,0)"/></radialGradient><circle cx="100" cy="400" r="80" fill="url(%23grad1)"/><circle cx="250" cy="350" r="100" fill="url(%23grad1)"/><circle cx="400" cy="380" r="90" fill="url(%23grad1)"/><circle cx="550" cy="340" r="110" fill="url(%23grad1)"/><circle cx="700" cy="390" r="85" fill="url(%23grad1)"/></svg>');
+    background-size: 300px auto;
+    background-repeat: repeat-x;
+    filter: blur(20px);
+    mix-blend-mode: screen;
+  }
+
+  .smoke-gray {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500"><radialGradient id="grad2"><stop offset="0%" stop-color="rgba(120,110,100,0.7)"/><stop offset="100%" stop-color="rgba(60,55,50,0)"/></radialGradient><circle cx="150" cy="350" r="120" fill="url(%23grad2)"/><circle cx="350" cy="300" r="140" fill="url(%23grad2)"/><circle cx="500" cy="370" r="100" fill="url(%23grad2)"/></svg>');
+    background-size: 350px auto;
+    background-repeat: repeat-x;
+    filter: blur(25px);
+    mix-blend-mode: screen;
+  }
+
+  .smoke-black {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 550"><radialGradient id="grad3"><stop offset="0%" stop-color="rgba(40,35,30,0.9)"/><stop offset="100%" stop-color="rgba(20,18,15,0)"/></radialGradient><circle cx="200" cy="400" r="130" fill="url(%23grad3)"/><circle cx="450" cy="350" r="150" fill="url(%23grad3)"/><circle cx="600" cy="420" r="110" fill="url(%23grad3)"/></svg>');
+    background-size: 400px auto;
+    background-repeat: repeat-x;
+    filter: blur(30px);
+    mix-blend-mode: normal;
+  }
+
+  /* TIMELINE SECTION - Adjusted height for 5 items */
+  .timeline {
+    position: relative;
+    width: 100%;
+    max-width: 1300px;
+    margin: 80px auto;
+    padding: 80px 0;
+    height: 1600px;
+    z-index: 10;
+  }
+
+  .timeline-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .progress-path {
+    fill: none;
+    stroke: #ff5e00;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 12 24;
+    filter: drop-shadow(0 0 8px #ff6600);
+    opacity: 0.9;
+  }
+
+  /* Event cards */
+  .item {
+    position: absolute;
+    width: 260px;
+    padding: 14px 18px;
+    text-align: center;
+    background: rgba(18, 22, 30, 0.92);
+    backdrop-filter: blur(6px);
+    color: #f0f0f0;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 80, 40, 0.6);
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    z-index: 15;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .item:hover {
+    transform: scale(1.07) translateY(-5px);
+    box-shadow: 0 0 18px #ff5e00, 0 0 35px rgba(255, 80, 0, 0.6);
+    border-color: #ff7b2c;
+    background: rgba(25, 30, 40, 0.98);
+  }
+
+  .item strong {
+    display: block;
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+    color: #ff884d;
+  }
+
+  .item small {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    display: block;
+    margin-top: 5px;
+  }
+
+  /* MODAL STYLES */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+  }
+
+  .modal.active {
+    display: flex;
+  }
+
+  .modal-content {
+    background: linear-gradient(145deg, #1a1612, #0f0d0a);
+    border: 2px solid #ff5e00;
+    border-radius: 32px;
+    width: 85%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 2rem;
+    position: relative;
+    animation: modalFadeIn 0.4s ease;
+    box-shadow: 0 0 50px rgba(255, 80, 0, 0.3);
+  }
+
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #ff5e00;
+    background: none;
+    border: none;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover {
+    transform: scale(1.2);
+    color: #ffaa55;
+  }
+
+  .modal-title {
+    font-size: 2rem;
+    color: #ff884d;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #ff5e00;
+    display: inline-block;
+    font-family: 'Times New Roman', Times, serif;
+  }
+
+  .modal-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 20px;
+    margin: 1rem 0;
+    border: 1px solid #ff5e00;
+    background: #2a1e14;
+  }
+
+  .modal-image-placeholder {
+    width: 100%;
+    height: 250px;
+    background: linear-gradient(145deg, #2d221b, #1e1610);
+    border-radius: 20px;
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a56e3e;
+    font-family: 'Courier New', monospace;
+    border: 1px dashed #ff5e00;
+  }
+
+  .modal-text {
+    color: #e0d0b8;
+    line-height: 1.6;
+    font-size: 1rem;
+    margin-top: 1rem;
+  }
+
+  .modal-text p {
+    margin-bottom: 1rem;
+  }
+
+  /* Custom cursor */
+  .cursor-dot,
+  .cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+  }
+  .cursor-dot {
+    width: 6px;
+    height: 6px;
+    background: #ff5e00;
+    border-radius: 50%;
+  }
+  .cursor-ring {
+    width: 42px;
+    height: 42px;
+    border: 2px solid #ff884d;
+    border-radius: 50%;
+    transition: transform 0.12s ease;
+    background: rgba(255, 80, 0, 0.05);
+  }
+
+  .timeline-header {
+    text-align: center;
+    color: #ffaa66;
+    font-family: monospace;
+    letter-spacing: 3px;
+    margin-bottom: -40px;
+    position: relative;
+    z-index: 12;
+    text-shadow: 0 0 6px #ff4400;
+    font-weight: 300;
+  }
+  .timeline-header h1 {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #ffaa55, #ff4411);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .timeline-header p {
+    font-size: 0.8rem;
+    color: #dd9977;
+  }
+
+  /* Rising Stars Container */
+  .stars-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+  }
+
+  .star {
+    position: absolute;
+    background-color: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 6px rgba(255, 200, 100, 0.8);
+  }
+
+  @media (max-width: 780px) {
+    .item {
+      width: 210px;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+    }
+    .timeline {
+      height: 1700px;
+    }
+    .modal-content {
+      width: 90%;
+      padding: 1.5rem;
+    }
+    .modal-title {
+      font-size: 1.5rem;
+    }
+  }
+  @media (max-width: 550px) {
+    .item {
+      width: 85%;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
+  }
+  .top-nav{
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+}
+
+.home-btn{
+  text-decoration: none;
+  font-family: 'Times New Roman', serif;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #ffaa66;
+
+  padding: 8px 18px;
+  border-radius: 40px;
+
+  background: rgba(20, 12, 8, 0.8);
+  border: 1px solid #ff5e00;
+
+  box-shadow: 0 0 10px rgba(255, 80, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.home-btn:hover{
+  color: #fff;
+  background: rgba(30, 15, 10, 0.95);
+  border-color: #ff884d;
+  box-shadow: 0 0 20px rgba(255, 100, 40, 0.7);
+  transform: translateY(-2px);
+}
+</style>
+</head>
+<body>
+<div class="top-nav">
+  <a href="HOME.html" class="home-btn">🏠 Home</a>
+</div>
+<!-- BACKGROUND IMAGE (CRISP, NO BLUR) -->
+<div class="burning-bg">
+  <div class="building-image"></div>
+  <div class="dark-overlay"></div>
+</div>
+
+<!-- SMOKE LAYERS -->
+<div class="smoke-container">
+  <div class="smoke smoke-heavy" id="smoke1"></div>
+  <div class="smoke smoke-gray" id="smoke2"></div>
+  <div class="smoke smoke-black" id="smoke3"></div>
+</div>
+
+<!-- Rising Stars -->
+<div class="stars-container" id="starsContainer"></div>
+
+<!-- Custom cursor -->
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="timeline-header">
+  <div style="background: rgba(10, 12, 18, 0.95); padding: 12px 0; width: 100%; border-top: 1px solid #ff5e00; border-bottom: 1px solid #ff5e00;">
+    <h1 style="color: #ffaa66; font-family: monospace; letter-spacing: 2px; text-shadow: 0 0 4px #ff4400; margin: 0; font-size: 1.3rem;">🔥 BOMBAY'S MAJOR CRIMES 🔥</h1>
+    <p style="color: #dd9977; margin-top: 6px; letter-spacing: 1px; font-size: 0.7rem;">SCROLL DOWN TO VIEW ALL</p>
+  </div>
+</div>
+
+<section class="timeline">
+  <svg class="timeline-svg" viewBox="0 0 1000 1600" preserveAspectRatio="none">
+    <path
+      class="progress-path"
+      id="crimePath"
+      d="M500 40 C 300 280, 700 500, 500 750 C 300 1000, 700 1200, 500 1450"
+    />
+  </svg>
+
+  <!-- 5 Crime Events (1980 Serial Blasts REMOVED) -->
+  <div class="item" data-side="left" data-crime="1947">
+    <strong>📜 1947 - Partition Riots</strong> Communal violence, arson spree across the city. <small>Bombay Burning</small>
+  </div>
+  <div class="item" data-side="right" data-crime="1970">
+    <strong>💣 1970 - Smuggler's Duel</strong> Gold smuggling turf war, bomb blast at Crawford Market.
+  </div>
+  <div class="item" data-side="left" data-crime="1993">
+    <strong>🧨 1993 - Bombay Blasts</strong> 257 killed, 700+ injured. Landmark mafia-links case.
+  </div>
+  <div class="item" data-side="right" data-crime="2008">
+    <strong>🏨 2008 - Taj Hotel Blast</strong> 26/11 Mumbai attacks. Taj Mahal Palace under siege. <small>166+ fatalities</small>
+  </div>
+  <div class="item" data-side="left" data-crime="2011">
+    <strong>⚖️ 2011 - High Court Blast</strong> Car bomb outside Bombay High Court. 13 killed, 60+ injured.
+  </div>
+</section>
+
+<!-- MODAL POPUP -->
+<div id="crimeModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close">&times;</button>
+    <div class="modal-title" id="modalTitle">Crime Title</div>
+    <div id="modalImageContainer"></div>
+    <div class="modal-text" id="modalText">
+      <p>Detailed crime information will appear here...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  gsap.registerPlugin(ScrollTrigger);
+
+  // ========== SMOKE APPEARS IMMEDIATELY ==========
+  const smoke1 = document.getElementById("smoke1");
+  const smoke2 = document.getElementById("smoke2");
+  const smoke3 = document.getElementById("smoke3");
+  
+  // Start smoke rising immediately
+  gsap.set(smoke1, { y: "100%", opacity: 0.7 });
+  gsap.set(smoke2, { y: "90%", opacity: 0.6 });
+  gsap.set(smoke3, { y: "110%", opacity: 0.5 });
+  
+  // Continuous smoke animation
+  function animateSmoke(smoke, startY, endY, duration) {
+    gsap.to(smoke, {
+      y: endY,
+      duration: duration,
+      repeat: -1,
+      ease: "none",
+      onRepeat: () => gsap.set(smoke, { y: startY })
+    });
+  }
+  
+  animateSmoke(smoke1, "100%", "-80%", 12);
+  animateSmoke(smoke2, "90%", "-60%", 15);
+  animateSmoke(smoke3, "110%", "-40%", 18);
+  
+  // Horizontal drift
+  gsap.to(smoke1, { x: "15%", duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
+  gsap.to(smoke2, { x: "-12%", duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
+  gsap.to(smoke3, { x: "8%", duration: 12, repeat: -1, yoyo: true, ease: "sine.inOut" });
+
+  // ========== TIMELINE PATH ==========
+  const path = document.querySelector(".progress-path");
+  const items = document.querySelectorAll(".item");
+  const timelineContainer = document.querySelector(".timeline");
+
+  if (path) {
+    const pathLength = path.getTotalLength();
+    gsap.set(path, { strokeDashoffset: pathLength });
+    gsap.to(path, {
+      strokeDashoffset: 0,
+      ease: "none",
+      scrollTrigger: {
+        trigger: ".timeline",
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1.2,
+        invalidateOnRefresh: true
+      }
+    });
+  }
+
+  // Position cards
+  function positionCards() {
+    if (!path) return;
+    const pathLength = path.getTotalLength();
+    const totalItems = items.length;
+    items.forEach((item, idx) => {
+      const t = idx / (totalItems - 1);
+      const point = path.getPointAtLength(t * pathLength);
+      const side = item.dataset.side === "left" ? -1 : 1;
+      const offsetX = 170;
+      const offsetY = 25;
+
+      let leftPos = point.x + (side * offsetX);
+      let topPos = point.y - offsetY;
+      const containerWidth = timelineContainer.offsetWidth;
+      
+      if (leftPos < 20) leftPos = 20;
+      if (leftPos > containerWidth - 230) leftPos = containerWidth - 230;
+      
+      item.style.top = `${Math.max(20, topPos)}px`;
+      item.style.left = `${leftPos}px`;
+      
+      if (window.innerWidth <= 550) {
+        item.style.left = "50%";
+        item.style.transform = "translateX(-50%)";
+        item.style.top = `${point.y - 10}px`;
+      }
+    });
+  }
+
+  window.addEventListener("load", () => {
+    positionCards();
+    ScrollTrigger.refresh();
+  });
+  window.addEventListener("resize", () => {
+    positionCards();
+    ScrollTrigger.refresh();
+  });
+
+  // ========== MODAL SYSTEM ==========
+  const modal = document.getElementById("crimeModal");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalText = document.getElementById("modalText");
+  const closeModalBtn = document.querySelector(".modal-close");
+  
+  const crimeDetails = {
+    1947: {
+      title: "📜 1947 - Partition Riots",
+      image: "https://cdn.britannica.com/82/249482-050-59D5504C/Indian-refugees-1947.jpg",
+      text: `<p><strong>Date:</strong> August 1947</p>
+              <p><strong>Location:</strong> Multiple areas across Bombay</p>
+              <p><strong>Casualties:</strong> Over 1,000 killed, thousands displaced</p>
+              <p><strong>Details:</strong> Following the partition of India, severe communal riots broke out across Bombay.</p>`
+    },
+    1970: {
+      title: "💣 1970 - Smuggler's Duel",
+      image: "https://images.indianexpress.com/2017/06/1993-blast-mumbai-3-copy.jpg",  
+      text: `<p><strong>Date:</strong> March 1970</p>
+              <p><strong>Location:</strong> Crawford Market, Bombay</p>
+              <p><strong>Casualties:</strong> 8 killed, 30+ injured</p>
+              <p><strong>Details:</strong> A brutal turf war between rival gold smuggling gangs.</p>`
+    },
+    1993: {
+      title: "🧨 1993 - Bombay Blasts",
+      image: "https://www.livelaw.in/h-upload/2023/04/17/750x450_468731-1993-mumbai-serial-blasts.webp",  
+      text: `<p><strong>Date:</strong> March 12, 1993</p>
+              <p><strong>Location:</strong> Bombay Stock Exchange, Hotel Sea Rock</p>
+              <p><strong>Casualties:</strong> 257 killed, over 700 injured</p>
+              <p><strong>Details:</strong> 12 coordinated bombings within two hours.</p>
+              <p><strong>Key Suspects:</strong> Tiger Memon, Dawood Ibrahim, Yakub Memon</p>`
+    },
+    2008: {
+      title: "🏨 2008 - The burning of Taj Hotel (26/11)",
+      image: "https://c.ndtvimg.com/2019-11/r4ectgag_2611-mumbai-attack-2008_625x300_26_November_19.jpg?im=FeatureCrop,algorithm=dnn,width=1200,height=738",  
+      text: `<p><strong>Date:</strong> November 26-29, 2008</p>
+              <p><strong>Location:</strong> Taj Mahal Palace Hotel, Oberoi Trident</p>
+              <p><strong>Casualties:</strong> 166+ killed, over 300 injured</p>
+              <p><strong>Details:</strong> 10 Pakistani terrorists carried out coordinated attacks.</p>`
+    },
+    2011: {
+      title: "⚖️ 2011 - High Court Blast",
+      image: "https://www.livelaw.in/h-upload/2025/11/04/1500x900_629205-2011-triple-blasts-case.webp",  
+      text: `<p><strong>Date:</strong> July 13, 2011</p>
+              <p><strong>Location:</strong> Bombay High Court premises</p>
+              <p><strong>Casualties:</strong> 13 killed, over 60 injured</p>
+              <p><strong>Details:</strong> A car bomb detonated outside Gate No. 2.</p>`
+    }
+  };
+  
+  function openModal(crimeKey) {
+    const details = crimeDetails[crimeKey];
+    if (details) {
+        modalTitle.innerHTML = details.title;
+        modalText.innerHTML = details.text;
+        
+        // Handle dynamic image
+        const imageContainer = document.getElementById("modalImageContainer");
+        imageContainer.innerHTML = ''; // Clear previous image
+        
+        if (details.image) {
+            const img = document.createElement("img");
+            img.className = "modal-image";
+            img.src = details.image;
+            img.alt = details.title;
+            imageContainer.appendChild(img);
+        } else {
+            // Show placeholder if no image provided
+            const placeholder = document.createElement("div");
+            placeholder.className = "modal-image-placeholder";
+            placeholder.innerHTML = "📸 [NO IMAGE ADDED YET] Add image URL in crimeDetails";
+            imageContainer.appendChild(placeholder);
+        }
+    }
+    modal.classList.add("active");
+  }
+  
+  function closeModal() {
+    modal.classList.remove("active");
+  }
+  
+  items.forEach((item) => {
+    const crimeKey = item.dataset.crime;
+    if (crimeKey) {
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        openModal(crimeKey);
+        for (let i = 0; i < 12; i++) {
+          setTimeout(() => createStar(), i * 30);
+        }
+      });
+    }
+  });
+  
+  closeModalBtn.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  
+  // ========== RISING STARS ==========
+  const starsContainer = document.getElementById("starsContainer");
+  
+  function createStar() {
+    const star = document.createElement("div");
+    star.className = "star";
+    const size = Math.random() * 4 + 1.5;
+    star.style.width = size + "px";
+    star.style.height = size + "px";
+    star.style.backgroundColor = ["#ffdd88", "#ffaa55", "#ff8844", "#ffffff"][Math.floor(Math.random() * 4)];
+    star.style.left = Math.random() * 100 + "%";
+    star.style.bottom = "-10px";
+    star.style.opacity = Math.random() * 0.6 + 0.3;
+    starsContainer.appendChild(star);
+    
+    gsap.to(star, { y: "-120vh", x: (Math.random() - 0.5) * 60, duration: 4 + Math.random() * 6, ease: "none", onComplete: () => star.remove() });
+    gsap.to(star, { opacity: 0, duration: 2, delay: 2 });
+  }
+  
+  setInterval(() => createStar(), 350);
+  
+  // ========== CUSTOM CURSOR ==========
+  const dot = document.querySelector(".cursor-dot");
+  const ring = document.querySelector(".cursor-ring");
+  
+  window.addEventListener("mousemove", (e) => {
+    gsap.to(dot, { x: e.clientX, y: e.clientY, duration: 0.08 });
+    gsap.to(ring, { x: e.clientX, y: e.clientY, duration: 0.2 });
+  });
+  
+  items.forEach((item) => {
+    item.addEventListener("mouseenter", () => {
+      gsap.to(ring, { scale: 2.2, borderColor: "#ff5e00", backgroundColor: "rgba(255,80,0,0.15)", duration: 0.2 });
+    });
+    item.addEventListener("mouseleave", () => {
+      gsap.to(ring, { scale: 1, borderColor: "#ff884d", backgroundColor: "rgba(255,80,0,0.05)", duration: 0.3 });
+    });
+  });
+  
+  document.body.style.cursor = "none";
+</script>
+</body>
+</html>
