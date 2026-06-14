@@ -84,26 +84,47 @@ nav a:hover{
 
 /* TEAM */
 .team{
-  display:flex;
-  flex-wrap:wrap;
-  gap:20px;
-  justify-content:center;
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:25px;
+  margin-top:20px;
 }
 
 .member{
   text-align:center;
   background:#1c1610;
-  padding:20px;
+  padding:25px 20px;
   border-radius:15px;
-  width:200px;
   border:1px solid #6a3e22;
+  transition:0.3s ease;
 }
 
-.member img{
-  width:80px;
-  height:80px;
-  border-radius:50%;
-  margin-bottom:10px;
+.member:hover{
+  transform:translateY(-5px);
+  border-color:#d17e42;
+}
+
+.member h4{
+  color:#f5d6a8;
+  margin-bottom:15px;
+  font-size:1.3rem;
+}
+
+.member p{
+  margin:10px 0;
+  color:#e0cba0;
+}
+
+.member a{
+  display:inline-block;
+  margin-top:10px;
+  color:#d9a56c;
+  text-decoration:none;
+  font-weight:600;
+}
+
+.member a:hover{
+  color:#fff;
 }
 
 /* FOOTER */
